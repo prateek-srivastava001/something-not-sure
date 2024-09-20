@@ -8,6 +8,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 func main() {
@@ -17,10 +18,15 @@ func main() {
 
 	database.ConnectPostgres()
 	defer database.DisconnectPostgres()
-
 	database.RunMigrations()
 
 	e := echo.New()
+
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"*"},
+		AllowMethods: []string{echo.GET, echo.POST, echo.PUT, echo.DELETE},
+	}))
+
 	routers.SetupRoutes(e)
 	routers.SetupFriendRoutes(e)
 
