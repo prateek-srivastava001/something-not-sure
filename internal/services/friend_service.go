@@ -87,12 +87,36 @@ func AcceptFriendRequest(senderEmail, receiverEmail string) error {
 	return tx.Commit()
 }
 
+func GetFriendByEmail(userEmail, friendEmail string) (models.Friend, error) {
+	var friend models.Friend
+	query := `
+		SELECT f.id, f.user_email, f.friend_email, f.created_at, 
+			   u.first_name, u.last_name, u.username
+		FROM friends f
+		JOIN users u ON u.email = f.friend_email
+		WHERE f.user_email = $1 AND f.friend_email = $2
+	`
+	err := database.DB.QueryRow(query, userEmail, friendEmail).Scan(
+		&friend.ID, &friend.UserEmail, &friend.FriendEmail, &friend.CreatedAt,
+		&friend.FirstName, &friend.LastName, &friend.Username,
+	)
+	if err != nil {
+		return models.Friend{}, fmt.Errorf("friend not found: %w", err)
+	}
+	return friend, nil
+}
+
+
 func GetFriendsByEmail(email string) ([]models.Friend, error) {
 	var friends []models.Friend
-	rows, err := database.DB.Query(
-		"SELECT id, user_email, friend_email, created_at FROM friends WHERE user_email = $1",
-		email,
-	)
+	query := `
+		SELECT f.id,  f.friend_email, f.created_at, 
+			   u.first_name, u.last_name, u.username
+		FROM friends f
+		JOIN users u ON u.email = f.friend_email
+		WHERE f.user_email = $1
+	`
+	rows, err := database.DB.Query(query, email)
 	if err != nil {
 		return nil, err
 	}
@@ -100,26 +124,16 @@ func GetFriendsByEmail(email string) ([]models.Friend, error) {
 
 	for rows.Next() {
 		var friend models.Friend
-		if err := rows.Scan(&friend.ID, &friend.UserEmail, &friend.FriendEmail, &friend.CreatedAt); err != nil {
+		err := rows.Scan(
+			&friend.ID, &friend.FriendEmail, &friend.CreatedAt,
+			&friend.FirstName, &friend.LastName, &friend.Username,
+		)
+		if err != nil {
 			return nil, err
 		}
 		friends = append(friends, friend)
 	}
 	return friends, rows.Err()
-}
-
-func GetFriendByEmail(userEmail, friendEmail string) (*models.Friend, error) {
-	var friend models.Friend
-	err := database.DB.QueryRow(
-		"SELECT id, user_email, friend_email, created_at FROM friends WHERE user_email = $1 AND friend_email = $2",
-		userEmail, friendEmail,
-	).Scan(&friend.ID, &friend.UserEmail, &friend.FriendEmail, &friend.CreatedAt)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &friend, nil
 }
 
 func RemoveFriend(userEmail, friendEmail string) error {
@@ -130,13 +144,13 @@ func RemoveFriend(userEmail, friendEmail string) error {
 
 func GetPendingFriendRequests(email string) ([]models.FriendRequest, error) {
 	var requests []models.FriendRequest
-
 	query := `
-		SELECT id, sender_email, receiver_email, created_at, status
-		FROM friend_requests
-		WHERE receiver_email = $1 AND status = 'pending'
+		SELECT fr.id, fr.sender_email, fr.receiver_email, fr.created_at, fr.status,
+			   u.first_name, u.last_name, u.username
+		FROM friend_requests fr
+		JOIN users u ON u.email = fr.sender_email
+		WHERE fr.receiver_email = $1 AND fr.status = 'pending'
 	`
-
 	rows, err := database.DB.Query(query, email)
 	if err != nil {
 		return nil, fmt.Errorf("error querying pending friend requests: %w", err)
@@ -145,7 +159,11 @@ func GetPendingFriendRequests(email string) ([]models.FriendRequest, error) {
 
 	for rows.Next() {
 		var request models.FriendRequest
-		if err := rows.Scan(&request.ID, &request.SenderEmail, &request.ReceiverEmail, &request.CreatedAt, &request.Status); err != nil {
+		err := rows.Scan(
+			&request.ID, &request.SenderEmail, &request.ReceiverEmail, &request.CreatedAt, &request.Status,
+			&request.FirstName, &request.LastName, &request.Username,
+		)
+		if err != nil {
 			return nil, fmt.Errorf("error scanning pending friend request: %w", err)
 		}
 		requests = append(requests, request)

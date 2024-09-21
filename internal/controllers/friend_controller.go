@@ -133,11 +133,28 @@ func GetAllFriends(c echo.Context) error {
 	})
 }
 
-func GetFriendProfile(c echo.Context) error {
-	friendEmail := c.Param("email")
+func GetPendingFriendRequests(c echo.Context) error {
 	email := c.Get("user_email").(string)
 
-	friend, err := services.GetFriendByEmail(email, friendEmail)
+	requests, err := services.GetPendingFriendRequests(email)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"message": err.Error(),
+			"status":  "error",
+		})
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"requests": requests,
+		"status":   "success",
+	})
+}
+
+func GetFriendProfile(c echo.Context) error {
+	friendEmail := c.Param("email")
+	userEmail := c.Get("user_email").(string)
+
+	friend, err := services.GetFriendByEmail(userEmail, friendEmail)
 	if err != nil {
 		return c.JSON(http.StatusNotFound, map[string]string{
 			"message": "Friend not found",
@@ -165,22 +182,5 @@ func RemoveFriend(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{
 		"message": "Friend removed",
 		"status":  "success",
-	})
-}
-
-func GetPendingFriendRequests(c echo.Context) error {
-	email := c.Get("user_email").(string)
-
-	requests, err := services.GetPendingFriendRequests(email)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"message": err.Error(),
-			"status":  "error",
-		})
-	}
-
-	return c.JSON(http.StatusOK, map[string]interface{}{
-		"requests": requests,
-		"status":   "success",
 	})
 }
