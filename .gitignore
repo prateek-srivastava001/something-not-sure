@@ -1,2 +1,40 @@
+# Go binaries
+/bin/
+/obj/
+
+# Dependency directories
+/vendor/
+
+# Environment variables file
 .env
-/internal/services/devsoc24-79c37101e486.json
+
+# Log files
+*.log
+
+# Coverage files
+*.out
+
+# IDE or editor specific files
+.idea/
+*.swp
+*.swo
+*.sublime-workspace
+*.sublime-project
+
+# MacOS specific files
+.DS_Store
+
+# Windows specific files
+Thumbs.db
+ehthumbs.db
+
+# Go test binary, built with `go test`
+*.test
+
+# Compiled binary and executable files
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+.env
