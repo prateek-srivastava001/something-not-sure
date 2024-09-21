@@ -16,88 +16,62 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func UploadImage(ctx echo.Context) error {
+func UploadMedia(ctx echo.Context) error {
 	email := ctx.Get("user_email").(string)
-	file, err := ctx.FormFile("image")
-	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, map[string]string{
-			"message": "File is required",
-			"status":  "fail",
-		})
+	var imageURL, audioURL string
+
+	if imageFile, err := ctx.FormFile("image"); err == nil {
+		src, err := imageFile.Open()
+		if err != nil {
+			return ctx.JSON(http.StatusInternalServerError, map[string]string{
+				"message": "Could not open image file",
+				"status":  "error",
+			})
+		}
+		defer src.Close()
+
+		imageURL, err = uploadToS3(imageFile.Filename, src)
+		if err != nil {
+			log.Printf("Error uploading image to S3: %v", err)
+			return ctx.JSON(http.StatusInternalServerError, map[string]string{
+				"message": "Error uploading image to S3",
+				"status":  "error",
+			})
+		}
 	}
 
-	src, err := file.Open()
-	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, map[string]string{
-			"message": "Could not open file",
-			"status":  "error",
-		})
-	}
-	defer src.Close()
+	if audioFile, err := ctx.FormFile("audio"); err == nil {
+		src, err := audioFile.Open()
+		if err != nil {
+			return ctx.JSON(http.StatusInternalServerError, map[string]string{
+				"message": "Could not open audio file",
+				"status":  "error",
+			})
+		}
+		defer src.Close()
 
-	s3URL, err := uploadToS3(file.Filename, src)
-	if err != nil {
-		log.Printf("Error uploading to S3: %v", err)
-		return ctx.JSON(http.StatusInternalServerError, map[string]string{
-			"message": "Error uploading to S3",
-			"status":  "error",
-		})
+		audioURL, err = uploadToS3(audioFile.Filename, src)
+		if err != nil {
+			log.Printf("Error uploading audio to S3: %v", err)
+			return ctx.JSON(http.StatusInternalServerError, map[string]string{
+				"message": "Error uploading audio to S3",
+				"status":  "error",
+			})
+		}
 	}
 
-	if err := services.StoreMediaURL(email, s3URL, ""); err != nil { // Store image URL
-		log.Printf("Error storing image URL in DB: %v", err)
+	if err := services.StoreMediaURL(email, imageURL, audioURL); err != nil {
+		log.Printf("Error storing media URLs in DB: %v", err)
 		return ctx.JSON(http.StatusInternalServerError, map[string]string{
-			"message": "Error storing image URL",
+			"message": "Error storing media URLs",
 			"status":  "error",
 		})
 	}
 
 	return ctx.JSON(http.StatusOK, map[string]interface{}{
-		"message":  "Image uploaded successfully",
-		"imageURL": s3URL,
-		"status":   "success",
-	})
-}
-
-func UploadAudio(ctx echo.Context) error {
-	email := ctx.Get("user_email").(string)
-	file, err := ctx.FormFile("audio")
-	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, map[string]string{
-			"message": "File is required",
-			"status":  "fail",
-		})
-	}
-
-	src, err := file.Open()
-	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, map[string]string{
-			"message": "Could not open file",
-			"status":  "error",
-		})
-	}
-	defer src.Close()
-
-	s3URL, err := uploadToS3(file.Filename, src)
-	if err != nil {
-		log.Printf("Error uploading to S3: %v", err)
-		return ctx.JSON(http.StatusInternalServerError, map[string]string{
-			"message": "Error uploading to S3",
-			"status":  "error",
-		})
-	}
-
-	if err := services.StoreMediaURL(email, "", s3URL); err != nil {
-		log.Printf("Error storing audio URL in DB: %v", err)
-		return ctx.JSON(http.StatusInternalServerError, map[string]string{
-			"message": "Error storing audio URL",
-			"status":  "error",
-		})
-	}
-
-	return ctx.JSON(http.StatusOK, map[string]interface{}{
-		"message":  "Audio uploaded successfully",
-		"audioURL": s3URL,
+		"message":  "Media uploaded successfully",
+		"imageURL": imageURL,
+		"audioURL": audioURL,
 		"status":   "success",
 	})
 }
