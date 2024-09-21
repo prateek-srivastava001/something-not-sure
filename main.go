@@ -29,6 +29,7 @@ func main() {
 
 	routers.SetupRoutes(e)
 	routers.SetupFriendRoutes(e)
+	routers.SetupReceiptRoutes(e)
 
 	port := os.Getenv("PORT")
 	if port == "" {
