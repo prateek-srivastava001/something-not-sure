@@ -90,7 +90,7 @@ func UploadMedia(ctx echo.Context) error {
 		}
 	}
 
-	if err := services.StoreMediaURL(email, imageURL, audioURL); err != nil {
+	if err := services.StoreMediaURL(email, imageURL, audioURL, detectedText, audioTranscription); err != nil {
 		return ctx.JSON(http.StatusInternalServerError, map[string]string{
 			"message": "Error storing media URLs",
 			"status":  "error",
