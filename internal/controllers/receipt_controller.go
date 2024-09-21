@@ -16,6 +16,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// In UploadImage function
 func UploadImage(ctx echo.Context) error {
 	email := ctx.Get("user_email").(string)
 	file, err := ctx.FormFile("image")
@@ -44,7 +45,17 @@ func UploadImage(ctx echo.Context) error {
 		})
 	}
 
-	if err := services.StoreMediaURL(email, s3URL, ""); err != nil { // Store image URL
+	// Check if audio URL is already stored
+	audioURL, err := services.GetAudioURL(email)
+	if err != nil {
+		log.Printf("Error fetching audio URL from DB: %v", err)
+		return ctx.JSON(http.StatusInternalServerError, map[string]string{
+			"message": "Error fetching audio URL",
+			"status":  "error",
+		})
+	}
+
+	if err := services.StoreMediaURL(email, s3URL, audioURL); err != nil { // Store image URL
 		log.Printf("Error storing image URL in DB: %v", err)
 		return ctx.JSON(http.StatusInternalServerError, map[string]string{
 			"message": "Error storing image URL",
@@ -59,6 +70,7 @@ func UploadImage(ctx echo.Context) error {
 	})
 }
 
+// In UploadAudio function
 func UploadAudio(ctx echo.Context) error {
 	email := ctx.Get("user_email").(string)
 	file, err := ctx.FormFile("audio")
@@ -87,7 +99,17 @@ func UploadAudio(ctx echo.Context) error {
 		})
 	}
 
-	if err := services.StoreMediaURL(email, "", s3URL); err != nil {
+	// Check if image URL is already stored
+	imageURL, err := services.GetImageURL(email)
+	if err != nil {
+		log.Printf("Error fetching image URL from DB: %v", err)
+		return ctx.JSON(http.StatusInternalServerError, map[string]string{
+			"message": "Error fetching image URL",
+			"status":  "error",
+		})
+	}
+
+	if err := services.StoreMediaURL(email, imageURL, s3URL); err != nil {
 		log.Printf("Error storing audio URL in DB: %v", err)
 		return ctx.JSON(http.StatusInternalServerError, map[string]string{
 			"message": "Error storing audio URL",
