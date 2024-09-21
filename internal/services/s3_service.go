@@ -4,8 +4,8 @@ import (
 	"EasySplit/internal/database"
 )
 
-func StoreImageURL(email, imageURL string) error {
-	query := `INSERT INTO user_images (user_email, image_url) VALUES ($1, $2)`
-	_, err := database.DB.Exec(query, email, imageURL)
+func StoreMediaURL(email, imageURL, audioURL string) error {
+	query := `INSERT INTO user_media (user_email, image_url, audio_url) VALUES ($1, $2, $3)`
+	_, err := database.DB.Exec(query, email, imageURL, audioURL)
 	return err
 }

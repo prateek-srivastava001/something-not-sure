@@ -26,7 +26,48 @@ func UploadImage(ctx echo.Context) error {
 		})
 	}
 
-	// fmt.Println("its working till here");
+	src, err := file.Open()
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, map[string]string{
+			"message": "Could not open file",
+			"status":  "error",
+		})
+	}
+	defer src.Close()
+
+	s3URL, err := uploadToS3(file.Filename, src)
+	if err != nil {
+		log.Printf("Error uploading to S3: %v", err)
+		return ctx.JSON(http.StatusInternalServerError, map[string]string{
+			"message": "Error uploading to S3",
+			"status":  "error",
+		})
+	}
+
+	if err := services.StoreMediaURL(email, s3URL, ""); err != nil { // Store image URL
+		log.Printf("Error storing image URL in DB: %v", err)
+		return ctx.JSON(http.StatusInternalServerError, map[string]string{
+			"message": "Error storing image URL",
+			"status":  "error",
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, map[string]interface{}{
+		"message":  "Image uploaded successfully",
+		"imageURL": s3URL,
+		"status":   "success",
+	})
+}
+
+func UploadAudio(ctx echo.Context) error {
+	email := ctx.Get("user_email").(string)
+	file, err := ctx.FormFile("audio")
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, map[string]string{
+			"message": "File is required",
+			"status":  "fail",
+		})
+	}
 
 	src, err := file.Open()
 	if err != nil {
@@ -46,17 +87,17 @@ func UploadImage(ctx echo.Context) error {
 		})
 	}
 
-	if err := services.StoreImageURL(email, s3URL); err != nil {
-		log.Printf("Error storing image URL in DB: %v", err)
+	if err := services.StoreMediaURL(email, "", s3URL); err != nil {
+		log.Printf("Error storing audio URL in DB: %v", err)
 		return ctx.JSON(http.StatusInternalServerError, map[string]string{
-			"message": "Error storing image URL",
+			"message": "Error storing audio URL",
 			"status":  "error",
 		})
 	}
 
 	return ctx.JSON(http.StatusOK, map[string]interface{}{
-		"message":  "Image uploaded successfully",
-		"imageURL": s3URL,
+		"message":  "Audio uploaded successfully",
+		"audioURL": s3URL,
 		"status":   "success",
 	})
 }
@@ -73,9 +114,6 @@ func uploadToS3(fileName string, file multipart.File) (string, error) {
 	newFileName := fmt.Sprintf("%d-%s", time.Now().Unix(), fileName)
 
 	bucketName := os.Getenv("S3_BUCKET_NAME")
-	// fmt.Println(bucketName)
-	// fmt.Println(os.Getenv("AWS_REGION"))
-	// fmt.Println(os.Getenv("AWS_ACCESS_KEY"))
 	_, err = s3Client.PutObject(context.TODO(), &s3.PutObjectInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String(newFileName),
