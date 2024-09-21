@@ -1,6 +1,6 @@
 -- +goose Up
 CREATE TABLE user_media (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY NOT NULL,
     user_email VARCHAR(100) NOT NULL,
     image_url TEXT,
     audio_url TEXT,

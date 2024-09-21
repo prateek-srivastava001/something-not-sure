@@ -21,12 +21,15 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
 
 func UploadMedia(ctx echo.Context) error {
 	email := ctx.Get("user_email").(string)
 	var imageURL, audioURL, detectedText, audioTranscription string
+
+	mediaID := uuid.New()
 
 	if imageFile, err := ctx.FormFile("image"); err == nil {
 		src, err := imageFile.Open()
@@ -90,7 +93,7 @@ func UploadMedia(ctx echo.Context) error {
 		}
 	}
 
-	if err := services.StoreMediaURL(email, imageURL, audioURL, detectedText, audioTranscription); err != nil {
+	if err := services.StoreMediaURL(mediaID, email, imageURL, audioURL, detectedText, audioTranscription); err != nil {
 		return ctx.JSON(http.StatusInternalServerError, map[string]string{
 			"message": "Error storing media URLs",
 			"status":  "error",
@@ -101,6 +104,7 @@ func UploadMedia(ctx echo.Context) error {
 		"message":       "Media uploaded successfully",
 		"imageURL":      imageURL,
 		"audioURL":      audioURL,
+		"billID":        mediaID,
 		"detectedText":  detectedText,
 		"transcription": audioTranscription,
 		"status":        "success",
