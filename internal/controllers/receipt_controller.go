@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"image"
 	"image/jpeg"
+	"image/png"
 	"io"
 	"log"
 	"mime/multipart"
@@ -21,7 +22,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/labstack/echo/v4"
-	"github.com/nfnt/resize"
 )
 
 func UploadMedia(ctx echo.Context) error {
@@ -143,16 +143,18 @@ func processAndUploadImageToS3(fileName string, file multipart.File) (string, er
 		return "", err
 	}
 
-	resizedImg := resize.Resize(1024, 0, img, resize.Lanczos3)
-
 	var buf bytes.Buffer
-	if format == "jpeg" {
-		err = jpeg.Encode(&buf, resizedImg, &jpeg.Options{Quality: 80})
-	} else {
+	switch format {
+	case "jpeg":
+		err = jpeg.Encode(&buf, img, &jpeg.Options{Quality: 80})
+	case "png":
+		err = png.Encode(&buf, img)
+	default:
 		return "", fmt.Errorf("unsupported image format: %s", format)
 	}
+
 	if err != nil {
-		log.Printf("Unable to encode resized image: %v", err)
+		log.Printf("Unable to encode image: %v", err)
 		return "", err
 	}
 

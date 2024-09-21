@@ -40,3 +40,4 @@ ehthumbs.db
 # Google Cloud Service Account Credentials
 internal/services/*.json
 .env
+.env
