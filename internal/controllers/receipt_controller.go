@@ -20,6 +20,7 @@ func UploadMedia(ctx echo.Context) error {
 	email := ctx.Get("user_email").(string)
 	var imageURL, audioURL string
 
+	// Handle image upload
 	if imageFile, err := ctx.FormFile("image"); err == nil {
 		src, err := imageFile.Open()
 		if err != nil {
@@ -40,6 +41,7 @@ func UploadMedia(ctx echo.Context) error {
 		}
 	}
 
+	// Handle audio upload
 	if audioFile, err := ctx.FormFile("audio"); err == nil {
 		src, err := audioFile.Open()
 		if err != nil {
@@ -60,6 +62,7 @@ func UploadMedia(ctx echo.Context) error {
 		}
 	}
 
+	// Store the media URLs in the database
 	if err := services.StoreMediaURL(email, imageURL, audioURL); err != nil {
 		log.Printf("Error storing media URLs in DB: %v", err)
 		return ctx.JSON(http.StatusInternalServerError, map[string]string{
