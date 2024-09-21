@@ -66,7 +66,7 @@ func fetchImageFromURL(imageURL string) ([]byte, error) {
 
 func detectTextFromImage(imageData []byte) (string, error) {
 	ctx := context.Background()
-	client, err := vision.NewImageAnnotatorClient(ctx, option.WithCredentialsFile(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")))
+	client, err := vision.NewImageAnnotatorClient(ctx, option.WithCredentialsFile("/etc/secrets/credentials.json"))
 	if err != nil {
 		return "", fmt.Errorf("failed to create vision client: %v", err)
 	}
