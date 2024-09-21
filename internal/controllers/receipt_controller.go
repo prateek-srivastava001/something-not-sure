@@ -24,6 +24,8 @@ func UploadImage(ctx echo.Context) error {
 		})
 	}
 
+	fmt.Println("its working till here");
+
 	src, err := file.Open()
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, map[string]string{
