@@ -37,4 +37,6 @@ ehthumbs.db
 *.dll
 *.so
 *.dylib
+# Google Cloud Service Account Credentials
+internal/services/*.json
 .env
